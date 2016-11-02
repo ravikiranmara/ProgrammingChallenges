@@ -1,159 +1,269 @@
 #include <iostream>
-#include <sstream> 
-#include <cstring>
+#include <string>
+#include <sstream>
+#include <vector>
+#include <list>
+#include <algorithm>
 
 using std::cout;
 using std::cin;
 using std::endl;
+using std::string;
+using std::stringstream;
+using std::getline;
+using std::list;
+using std::vector;
 
-const int MaxCandidates = 20;
-const int MaxVotes = 1000;
-const int MaxCandidateName = 81;
+const int MaxLength = 81;
 
-bool ReadCandidateNames(char candidates[MaxCandidates][MaxCandidateName], bool validCandidate[MaxCandidates], int n)
-{
-	bool rval = true;
-	char tempname[81];
-	
-	for(int i=0; i<n; i++) {
-		cin >> tempname;
-		strncpy(candidates[i], tempname, MaxCandidateName);
-        validCandidate[i] = true;
+class Candidate {
+	string name;
+	bool inrace;
+	int voteCount;
+	int id;
+
+public:
+	Candidate(string name, int id) {
+		this->name = name;
+		inrace = true;
+		voteCount = 0;
+		this->id = id;
 	}
+
+	string GetName() {
+		return name;  
+	}
+
+	void Discard() {
+		inrace = false;
+		voteCount = -1;
+	}
+
+	void ResetVote() {
+		if(this->inrace)
+			voteCount = 0;
+	}
+
+	int GetVoteCount() {
+		return voteCount;
+	}
+
+	int AddVote() {
+		return ++voteCount;
+	}
+
+	bool InRace() {
+		return this->inrace;
+	}
+
+	int GetId() {
+		return id;
+	}
+
+	void dumpCandidate() {
+		cout << "name : " << this->GetName() << endl;
+		cout << "id : " << this->GetId() << endl;
+		cout << "inRace : " << this->InRace() << endl;
+		cout << "vote count : " << this->GetVoteCount() << endl;
+	}
+};
+
+class Ballot
+{
+	vector<Candidate> candidates;
+	vector<list<int>> allvotes;
+	int numCandidatesInRace;
+	int maxVote; 
 	
-	return rval;
-}
+	void countVotes() {
+		this->maxVote = 0;
+		// cout << "all votes : " << allvotes.size() << endl;
 
-bool DumpCandidateNames(char candidates[MaxCandidates][MaxCandidateName], bool validCandidate[MaxCandidates], int n)
-{
-    for(int i=0; i<n; i++) 
-        cout << candidates[i] << ":" << validCandidate[i] << endl;
-}
-
-void MakeAllCandidateInvalid(bool validCandidate[MaxCandidates])
-{
-    for(int i=0; i<MaxCandidates; i++) {
-        validCandidate[i] = false;
-    }
-}
-
-int ReadVotes(int votes[MaxVotes][MaxCandidates], int n)
-{
-    std::string line;
-	std::stringstream sline;
-	
-	int i=0;
-	while(std::getline(cin, line)) {
-		if(line.length() == 0) {
-            cout << "emptyline" << endl;
-			break;
-        }
-		
-        sline.str(line);
-		for(int j=0; j<n; j++) {
-			sline >> votes[i][j];
+		for (auto &c : candidates) {
+			c.ResetVote();
 		}
-		
-		i++;
+
+		for (auto &vote : allvotes) {
+			candidates[vote.front() - 1].AddVote();
+			maxVote = std::max
+                (maxVote, candidates[vote.front() - 1].GetVoteCount());
+		}
+
+		// cout << "Count vote exit" << endl;
+	}
+
+	void DiscardCandidate(int i) {
+		for(auto &v : allvotes) {
+			v.remove(i+1);
+		}
+		candidates[i].Discard();
+		numCandidatesInRace--;
+	}
+
+public:
+	Ballot() {  }
+
+	void Reset() {
+		numCandidatesInRace = 0;
+		maxVote = -1;
+		candidates.clear();
+		allvotes.clear();
 	}
 	
-	return i;
-}
+	void ReadCandidateNames(int n)
+	{
+		string str;
+		for (int i = 0; i < n; i++) {
+			getline(cin, str);
+			candidates.push_back(Candidate(str, i));
+		}
 
-void DumpVotes(int votes[MaxVotes][MaxCandidates], int numCandidate, int numVotes)
-{
-    for(int i=0; i<numVotes; i++) {
-        for(int j=0; j<numCandidate; j++) 
-            cout << votes[i][j] <<" ";
-        cout << endl;
-    }
-}
-
-void SetVotesToZero(int votesCandidate[MaxCandidates], int numCandidate)
-{
-    for(int i=0; i<numCandidate; i++) {
-        votesCandidate[i] = 0;
-    }
-
-    return;
-}
-
-int GetValidVote(int vote[MaxCandidates], bool validCandidate[MaxCandidates], int numCandidate)
-{
-    for (int i=0; i<numCandidate; i++) {
-        if(validCandidate[vote[i]] != false)
-            return vote[i];
-    }
-        
-    return -1; // this should never happen
-}
-
-int countVotes(int votes[MaxVotes][MaxCandidates], int votesCandidate[MaxCandidates], bool validCandidate[MaxCandidates], int numVotes, int numCandidate)
-{
-    SetVotesToZero(votesCandidate, numCandidate);
-
-    for(int i=0; i<numVotes; i++) {
-        votesCandidate[GetValidVote(votes[i], validCandidate, numCandidate)] += 1;
-    }
-
-    return 0;
-}
-
-bool IsWinner(int votesCandidate[MaxCandidates], int numCandidate, int &candidate) 
-{
-    int max = 0;
-    int tempcandidate = -1;
-
-    for(int i=0; i<numCandidate; i++) {
-        if(max < votesCandidate[i]) {
-            max = votesCandidate[i];
-            tempcandidate = i;
-        }
-    }
-
-    if((float)max/numCandidate > 0.5) {
-        candidate = tempcandidate;
-        return true;
-    }
-
-    return false;
-}
-
-int RemoveCandidates(bool validCandidate[MaxCandidates], int candidate) {
-    validCandidate[candidate] = false;
-}
-
-int main(int argc, char* argv[]) 
-{
-	int numInput;
-	int numCandidate;
-    int numVotes;
-	int votes[MaxVotes][MaxCandidates];
-	char candidates[MaxCandidates][MaxCandidateName];
-    bool validCandidate[MaxCandidates];
-    int votesCandidate[MaxCandidates];
-	std::stringstream sline;
-    std::string line;
-	
-	std::getline(cin, line);
-    sline.str(line);
-	sline >> numInput;
-	
-	std::getline(cin, line); // chomp empty line
-	
-	for(int i=0; i<numInput; i++) {
-        MakeAllCandidateInvalid(validCandidate);
-
-		cin >> numCandidate;
-		
-		ReadCandidateNames(candidates, validCandidate, numCandidate);
-        DumpCandidateNames(candidates, validCandidate, numCandidate);
-
-		numVotes = ReadVotes(votes, numCandidate);
-		DumpVotes(votes, numCandidate, numVotes);
-		
+		numCandidatesInRace = candidates.size();
+		// cout << "read all candidates" << endl;
 	}
-	
-}
 
-     
+	void ReadVotes()
+	{
+		string line;
+		stringstream str;
+		int numCandidates = candidates.size();
+
+		while (true) {
+			line.clear();
+			str.clear();
+
+			getline(cin, line);
+			if (line.empty()) {
+				//cout << "break" << line;
+				break;
+			}
+			
+			str << line;
+			
+			int temp;
+			list<int> vote;
+			for (int i = 0; i < numCandidates; i++) {
+				str >> temp;
+				//cout << "pushing temp: " << temp;
+				vote.push_back(temp);
+			}
+
+			allvotes.push_back(vote);
+		}
+	}
+
+	vector<Candidate> GetWinner() {
+		vector<Candidate> tiedCandidates;
+
+		this->countVotes();
+
+		for (auto &c : candidates) {
+			if (c.GetVoteCount() == maxVote) {
+				tiedCandidates.push_back(c);
+			}
+		}
+		// cout << "Get Winner exit : " << maxVote << endl;
+
+		return (tiedCandidates.size() == numCandidatesInRace)? 
+								tiedCandidates : vector<Candidate>();
+	}
+
+	void DiscardCandidatesWithLeastVote() {
+		int leastVotes = maxVote;
+		vector<Candidate> tiedCandidates;
+
+		for (auto &c : candidates) {
+			if (c.InRace()) {
+				leastVotes = std::min(leastVotes, c.GetVoteCount());
+			}
+		}
+
+		// cout << "least vote : " << leastVotes << endl;
+		for (auto &c : candidates) {
+			if (c.GetVoteCount() == leastVotes) {
+				this->DiscardCandidate(c.GetId());
+			}
+		}
+	}
+
+	void dumpCandidate()
+	{
+		cout << "---- Candidate dump ----" << endl;
+		for (auto &c : candidates) {
+			c.dumpCandidate();
+			cout << endl;
+		}
+
+	}
+
+	void voteDump() {
+		cout << "--- vote dump ---" << endl;
+		for (auto &v : allvotes) {
+			for (auto &i : v) {
+				cout << i << " ";
+			}
+			cout << endl;
+		}
+	}
+
+	void dumpBallot()
+	{
+		dumpCandidate();
+		voteDump();
+	}
+};
+
+int main(int argc, char *argv[])
+{
+	int numcases = 0;
+	int numCandidates = 0;
+	stringstream linestr;
+	string line;
+	Ballot ballot;
+	vector<Candidate> winners;
+	vector<Candidate> tempwinner;
+
+	// read line
+	getline(cin, line);
+	linestr << line;
+
+	// eat blank line
+	getline(cin, line);
+
+	linestr >> numcases;
+	while (numcases > 0) {
+		numcases--;
+
+		line.clear();
+		linestr.clear();
+		getline(cin, line);
+		linestr << line;
+		linestr >> numCandidates;
+
+		// cout << numCandidates;
+
+		ballot.Reset();
+		ballot.ReadCandidateNames(numCandidates);
+		ballot.ReadVotes();
+
+		while (true) {
+			winners = ballot.GetWinner();
+			// cout << "Get Wnners" << winners.size() << endl;
+			//ballot.dumpBallot();
+
+			if (0 != winners.size())
+				break;
+
+			ballot.DiscardCandidatesWithLeastVote();
+		}
+
+		for (auto &c : winners) {
+			cout << c.GetName() << endl;
+		}
+
+		if(0 != numcases)
+			cout << endl;
+	}
+
+	return 0;
+}
