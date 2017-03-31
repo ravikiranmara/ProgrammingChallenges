@@ -72,17 +72,25 @@ public:
     bool isConflict(string &word, string &dict, vector<char> &alphabet) {
         int size = word.size();
         int alpha; 
+        vector<char> assume;
+        assume.resize(AlphaLength, '.');
         if(size != dict.size()) 
             return true;
 
         for(int i=0; i<size; i++) {
-            if(alphabet['a' - word[i]] == dict[i] || 
-                    alphabet['a'-word[i]] == '.')
+            if((alphabet[word[i] - 'a'] == dict[i] || alphabet[word[i] - 'a'] == '.') 
+                    && (assume[word[i] - 'a'] == dict[i] || assume[word[i] - 'a'] == '.')) {
+                assume[word[i] - 'a'] = dict[i];
                 continue;
-            else return false;
+            }
+            else {
+                // cout << "return true\n";
+                return true;
+            }
         }
 
-        return true;
+        // cout << "return false\n";
+        return false;
     }
 
     void makeMap(string &word, string &dict, vector<char> &map, vector<char> &alphabet) {
@@ -114,13 +122,13 @@ public:
         }
 
         newmap.resize(AlphaLength, '.');
-        cout << "findmatch :: enter" << "(" << w <<"):" << line[w] << endl; 
+        // cout << "findmatch :: enter" << "(" << w <<"):" << line[w] << endl; 
 
         string word = line[w];
         for(auto &d:this->dictionary) {
-            cout << "examine:" << d << " <=>" << word << endl;
+            // cout << "examine:" << d << " <=>" << word << endl;
             if(!this->isConflict(word, d, alphabet)) {
-                cout <<"no conflict" << endl;
+                // cout <<"no conflict" << endl << std::flush;
                  makeMap(word, d, newmap, alphabet);
                  if(false == findMatch(line, w+1, alphabet)) {
                      unmakeMap(newmap, alphabet);
@@ -128,7 +136,7 @@ public:
                  } 
                  else return true;
              }
-             else cout << "conflict" << endl;
+             // else cout << "conflict" << endl;
         }
 
         return false;
@@ -152,14 +160,14 @@ public:
         std::sort(line.begin(), line.end());
         line.erase(std::unique(line.begin(), line.end()), line.end());
         std::sort(line.begin(), line.end(), compare);
-        dbgDumpVector(line);
+        // dbgDumpVector(line);
 
         // start decode
         if(true == this->findMatch(line, 0, alphabet))
             this->printDecodedMessage(sentence, alphabet);
         else    cout << "cannot decode" << endl;
 
-        dbgDumpAlphabet(alphabet);
+        // dbgDumpAlphabet(alphabet);
     }
 
     void printDecodedMessage(string sentence, vector<char> &alphabet) {
@@ -201,14 +209,14 @@ int main(int argc, char *argv[])
     CryptDecoder cryptDecoder;
 
     cryptDecoder.readDictionary();
-    cryptDecoder.dbgDump();
+    // cryptDecoder.dbgDump();
 
     line.clear();
     while(getline(cin, line)) {
         if(line.empty())
             break;
 
-        cout << "(" << line.size() << ")" << line << endl; 
+        // cout << "(" << line.size() << ")" << line << endl; 
         cryptDecoder.decode(line);
         line.clear();
     }
