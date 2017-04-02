@@ -68,7 +68,7 @@ public:
     int addToDictionary(string word) {
         dictionary.push_back(word);
     }
-
+    
     bool isConflict(string &word, string &dict, vector<char> &alphabet) {
         int size = word.size();
         int alpha; 
@@ -78,8 +78,10 @@ public:
             return true;
 
         for(int i=0; i<size; i++) {
-            if((alphabet[word[i] - 'a'] == dict[i] || alphabet[word[i] - 'a'] == '.') 
-                    && (assume[word[i] - 'a'] == dict[i] || assume[word[i] - 'a'] == '.')) {
+            if(((alphabet[word[i] - 'a'] == dict[i]) || 
+                    (alphabet[word[i] - 'a'] == '.' && alphabet.end() == std::find(alphabet.begin(), alphabet.end(), dict[i]))) &&
+                    (assume[word[i] - 'a'] == dict[i] || assume[word[i] - 'a'] == '.')) {
+                //cout << dict[i] << "-" << word[i] << "-" << assume[i] << endl;
                 assume[word[i] - 'a'] = dict[i];
                 continue;
             }
@@ -126,9 +128,9 @@ public:
 
         string word = line[w];
         for(auto &d:this->dictionary) {
-            // cout << "examine:" << d << " <=>" << word << endl;
+            //cout << "examine:" << d << " <=>" << word << endl;
             if(!this->isConflict(word, d, alphabet)) {
-                // cout <<"no conflict" << endl << std::flush;
+                 //cout <<"no conflict" << endl << std::flush;
                  makeMap(word, d, newmap, alphabet);
                  if(false == findMatch(line, w+1, alphabet)) {
                      unmakeMap(newmap, alphabet);
@@ -136,7 +138,7 @@ public:
                  } 
                  else return true;
              }
-             // else cout << "conflict" << endl;
+             //else cout << "conflict" << endl;
         }
 
         return false;
@@ -165,9 +167,17 @@ public:
         // start decode
         if(true == this->findMatch(line, 0, alphabet))
             this->printDecodedMessage(sentence, alphabet);
-        else    cout << "cannot decode" << endl;
+        else    this->printStars(sentence);
 
         // dbgDumpAlphabet(alphabet);
+    }
+    
+    void printStars(string sentence) {
+        for(auto a:sentence) {
+            if(' ' != a) cout <<"*";
+            else cout << a;
+        }
+        cout << endl;
     }
 
     void printDecodedMessage(string sentence, vector<char> &alphabet) {
